@@ -1,0 +1,51 @@
+(defun test ()
+  (with-open-file (out "~/code/lisp/practical/data/test.txt" :direction :output :if-exists :overwrite :if-does-not-exist :create :element-type '(unsigned-byte 8))
+    (write-byte 32 out)
+    (write-byte 22 out)
+    (write-byte 90 out)
+    (write-byte 12 out)))
+
+(defun test2 ()
+  (with-open-file (in "~/code/lisp/practical/data/test.txt" :direction :input :if-does-not-exist nil :element-type '(unsigned-byte 8))
+    (if in
+	(print (read-byte in)))))
+
+(defun read-u2 (in)
+  (let ((u 0))
+    (setf (ldb (byte 8 8) u) (read-byte in))
+    (setf (ldb (byte 8 0) u) (read-byte in))))
+
+(defun write-u2 (out v)
+  (write-byte (ldb (byte 8 8) v) out)
+  (write-byte (ldb (byte 8 0) v) out))
+  
+(defmacro mac (macro)
+  `(pprint (macroexpand ',macro)))
+(defmacro mac1 (macro)
+  `(pprint (macroexpand-1 ',macro)))
+(defmacro with-gensyms ((&rest names) &body body)
+  `(let ,(mapcar #'(lambda (name) `(,name (gensym))) names)
+     ,@body))
+(in-package :cl-user)
+(defpackage :com.seckcoder.binary-data
+  (:use :common-lisp)
+  (:export :define-binary-class
+	   :+null+))
+(in-package :com.seckcoder.binary-data)
+(defconstant +null+ (code-char 0))
+(defun as-keyword (sym) (intern (string sym) :keyword))
+(defun slot->defclass-slot (spec)
+  (let ((name (first spec)))
+    `(,name :initarg ,(as-keyword name) :accessor ,name)))
+
+(defun mklist (x) (if (listp x) x (list x)))
+(defun normalize-slot-spec (spec)
+  (list (first spec) (mklist (second spec))))
+(defun slot->read-value (spec stream)
+  (destructuring-bind (name (type &rest args)) (normalize-slot-spec spec)
+    `(setf ,name (read-value ',type ,stream ,@args))))
+
+
+(defgeneric read-value (type stream &key)
+  (:documentation "Read a value of the given type from the stream."))
+

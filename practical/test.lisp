@@ -1,0 +1,36 @@
+(defun primep (number)
+  (when (> number 1)
+    (loop for fac from 2 to (isqrt number) never (zerop (mod number fac)))))
+(defmacro with-gensyms ((&rest names) &body body)
+  `(let ,(loop for n in names collect `(,n (gensym)))
+     ,@body))
+(defun next-prime (number)
+  (loop for n from number when (primep n) return n))
+(defmacro do-primes ((var start end) &body body)
+  (with-gensyms (endsym)
+    `(do ((,var (next-prime ,start) (next-prime (1+ ,var)))
+	  (,endsym ,end))
+	 ((> ,var ,endsym))
+       ,@body)))
+
+(defmacro once-only ((&rest names) &body body)
+  (let ((gensyms (loop for n in names collect (gensym))))
+    `(let (,@(loop for g in gensyms collect `(,g (gensym))))
+      `(let (,,@(loop for g in gensyms for n in names collect ``(,,g ,,n)))
+        ,(let (,@(loop for n in names for g in gensyms collect `(,n ,g)))
+           ,@body)))))
+
+
+(defmacro demo-once-only (start end)
+  (once-only (start end)
+    `(format t "~A:~B" ,start ,end)))
+
+  
+(defmacro mac (macro)
+  `(pprint (macroexpand-1 ',macro)))
+
+(defmacro my-doprime ((var start end) &body body)
+  (my-once-only (start end)
+    `(do ((,var (next-prime ,start) (next-prime (1+ ,var))))
+	 ((> ,var ,end) 'DONE)
+       ,@body)))

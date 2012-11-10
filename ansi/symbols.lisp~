@@ -1,0 +1,3 @@
+(defparameter *glob* 10)
+
+(print (symbol-value *glob*))(
